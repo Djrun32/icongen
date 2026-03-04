@@ -18,6 +18,7 @@
         <thead>
             <tr>
                 <th>Name</th>
+                <th>Prompt Instructions</th>
                 <th>Status</th>
                 <th>Actions</th>
             </tr>
@@ -26,8 +27,19 @@
             {% for style in styles %}
             <tr>
                 <td>{{ style.name }}</td>
+                <td>{{ style.prompt_instructions }}</td>
                 <td>{{ "Active" if style.is_active else "Disabled" }}</td>
                 <td class="actions">
+                    <details class="edit-style">
+                        <summary>Edit</summary>
+                        <form method="post" action="/admin/styles/{{ style.id }}/update" class="stack edit-style-form">
+                            <label>Style name</label>
+                            <input type="text" name="name" value="{{ style.name }}" required />
+                            <label>Prompt instructions</label>
+                            <textarea name="prompt_instructions" rows="4" required>{{ style.prompt_instructions }}</textarea>
+                            <button type="submit">Save</button>
+                        </form>
+                    </details>
                     <form method="post" action="/admin/styles/{{ style.id }}/toggle">
                         <button type="submit">{{ "Disable" if style.is_active else "Enable" }}</button>
                     </form>

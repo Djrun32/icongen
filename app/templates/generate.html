@@ -6,7 +6,7 @@
     {% if error %}
     <p class="error">{{ error }}</p>
     {% endif %}
-    <form method="post" action="/generate" class="stack">
+    <form method="post" action="/generate" class="stack" id="generate-form">
         <label>Icon metaphor</label>
         <input type="text" name="metaphor" placeholder="e.g. growth, teamwork, risk shield" required />
 
@@ -16,7 +16,13 @@
             <option value="{{ style.id }}">{{ style.name }}</option>
             {% endfor %}
         </select>
-        <button type="submit">Generate Icon</button>
+        <button type="submit" id="generate-submit">Generate Icon</button>
+        <div id="generate-progress" class="generate-progress hidden" role="status" aria-live="polite">
+            <div class="progress-track">
+                <span class="progress-indeterminate"></span>
+            </div>
+            <p class="muted">Generating icon, please wait...</p>
+        </div>
     </form>
 </section>
 
@@ -29,4 +35,19 @@
     <p><a href="{{ result_path }}" download>Download PNG</a></p>
 </section>
 {% endif %}
+<script>
+    (() => {
+        const form = document.getElementById("generate-form");
+        const submitButton = document.getElementById("generate-submit");
+        const progress = document.getElementById("generate-progress");
+        if (!form || !submitButton || !progress) {
+            return;
+        }
+        form.addEventListener("submit", () => {
+            submitButton.disabled = true;
+            submitButton.textContent = "Generating...";
+            progress.classList.remove("hidden");
+        });
+    })();
+</script>
 {% endblock %}

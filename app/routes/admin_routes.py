@@ -81,6 +81,32 @@ def delete_style(
     return RedirectResponse(url="/admin/styles", status_code=302)
 
 
+@router.post("/styles/{style_id}/update")
+def update_style(
+    style_id: int,
+    name: str = Form(...),
+    prompt_instructions: str = Form(...),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    style = db.query(StylePreset).filter(StylePreset.id == style_id).first()
+    updated_name = name.strip()
+    updated_prompt = prompt_instructions.strip()
+
+    if style and updated_name and updated_prompt:
+        duplicate = (
+            db.query(StylePreset)
+            .filter(StylePreset.name == updated_name, StylePreset.id != style_id)
+            .first()
+        )
+        if not duplicate:
+            style.name = updated_name
+            style.prompt_instructions = updated_prompt
+            db.commit()
+
+    return RedirectResponse(url="/admin/styles", status_code=302)
+
+
 @router.get("/settings")
 def settings_page(
     request: Request,
