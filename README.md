@@ -1,6 +1,6 @@
 # Intranet Icon Generator
 
-Internal web app for generating presentation icons with OpenAI GPT Image models.
+Internal web app for generating presentation icons with OpenAI or Gemini image models.
 
 ## What this starter includes
 
@@ -26,7 +26,9 @@ Internal web app for generating presentation icons with OpenAI GPT Image models.
    ```
 3. Create `.env` from `.env.example` and set:
    - `SECRET_KEY` to a long random value.
-   - `OPENAI_API_KEY` to your API key.
+   - `OPENAI_API_KEY` (for OpenAI provider) or `GEMINI_API_KEY` (for Gemini provider).
+   - `IMAGE_PROVIDER` to `openai` or `gemini`.
+   - `IMAGE_MODEL` to your model ID (for example `gpt-image-1` or `gemini-3.1-flash-image-preview`).
    - `INITIAL_ADMIN_PASSWORD` to a secure password.
 4. Run the app (`.env` is auto-loaded):
    ```bash
@@ -36,7 +38,7 @@ Internal web app for generating presentation icons with OpenAI GPT Image models.
 6. Sign in with `INITIAL_ADMIN_USERNAME` and `INITIAL_ADMIN_PASSWORD`.
 7. In `/admin/settings`, you can:
    - update locked generation prompt/limits,
-   - set or clear a DB-stored OpenAI API key,
+   - choose image provider/model and set or clear a DB-stored provider API key,
    - reset any user password.
 
 ## Docker option

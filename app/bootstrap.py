@@ -32,6 +32,10 @@ def ensure_default_settings(db: Session) -> None:
         db.add(AppSetting(key="global_system_prompt", value=DEFAULT_SYSTEM_PROMPT))
     if not db.query(AppSetting).filter(AppSetting.key == "max_metaphor_length").first():
         db.add(AppSetting(key="max_metaphor_length", value="80"))
+    if not db.query(AppSetting).filter(AppSetting.key == "image_provider").first():
+        db.add(AppSetting(key="image_provider", value=settings.image_provider))
+    if not db.query(AppSetting).filter(AppSetting.key == "image_model").first():
+        db.add(AppSetting(key="image_model", value=settings.image_model))
     db.commit()
 
 

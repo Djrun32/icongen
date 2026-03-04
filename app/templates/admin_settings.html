@@ -8,13 +8,23 @@
         <textarea name="global_system_prompt" rows="5" required>{{ global_system_prompt }}</textarea>
         <label>Max metaphor length</label>
         <input type="number" min="10" max="300" name="max_metaphor_length" value="{{ max_metaphor_length }}" required />
-        <label>OpenAI API key (optional)</label>
-        <input type="password" name="openai_api_key" placeholder="sk-..." />
+
+        <label>Image provider</label>
+        <select name="image_provider" required>
+            <option value="openai" {% if image_provider == "openai" %}selected{% endif %}>OpenAI</option>
+            <option value="gemini" {% if image_provider == "gemini" %}selected{% endif %}>Gemini</option>
+        </select>
+
+        <label>Image model</label>
+        <input type="text" name="image_model" value="{{ image_model }}" placeholder="e.g. gpt-image-1 or gemini-3.1-flash-image-preview" required />
+
+        <label>Provider API key (optional override)</label>
+        <input type="password" name="model_api_key" placeholder="sk-... or AIza..." />
         {% if has_stored_api_key %}
         <p class="muted">Stored API key: {{ api_key_preview }}</p>
-        <label><input type="checkbox" name="clear_openai_api_key" value="true" /> Clear stored API key</label>
+        <label><input type="checkbox" name="clear_model_api_key" value="true" /> Clear stored API key</label>
         {% else %}
-        <p class="muted">No API key stored in DB. App falls back to OPENAI_API_KEY from .env.</p>
+        <p class="muted">No API key stored in DB. App falls back to OPENAI_API_KEY (OpenAI) or GEMINI_API_KEY (Gemini) from .env.</p>
         {% endif %}
         <button type="submit">Save Settings</button>
     </form>

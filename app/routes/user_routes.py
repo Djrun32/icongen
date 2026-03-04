@@ -6,7 +6,7 @@ from app.config import settings
 from app.db import get_db
 from app.deps import get_current_user
 from app.models import GeneratedIcon, StylePreset, User
-from app.services.openai_image import generate_icon_with_openai
+from app.services.openai_image import generate_icon_image
 from app.settings_store import get_setting
 
 
@@ -135,11 +135,23 @@ def generate_icon(
         )
 
     prompt = _build_prompt(style.prompt_instructions, raw_metaphor)
-    admin_api_key = get_setting(db, "openai_api_key", "").strip()
-    effective_api_key = admin_api_key or settings.openai_api_key
+    image_provider = get_setting(db, "image_provider", settings.image_provider).strip().lower() or settings.image_provider
+    image_model = get_setting(db, "image_model", settings.image_model).strip() or settings.image_model
+    legacy_openai_api_key = get_setting(db, "openai_api_key", "").strip()
+    stored_model_api_key = get_setting(db, "model_api_key", legacy_openai_api_key).strip()
+    if image_provider == "gemini":
+        effective_api_key = stored_model_api_key or settings.gemini_api_key
+    else:
+        effective_api_key = stored_model_api_key or settings.openai_api_key
 
     try:
-        relative_path = generate_icon_with_openai(prompt, api_key=effective_api_key)
+        relative_path = generate_icon_image(
+            prompt=prompt,
+            provider=image_provider,
+            model=image_model,
+            api_key=effective_api_key,
+            size=settings.image_size,
+        )
     except Exception as exc:
         return _render_generate_page(
             request=request,

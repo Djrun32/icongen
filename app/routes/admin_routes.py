@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.auth import hash_password
+from app.config import settings
 from app.db import get_db
 from app.deps import require_admin
 from app.models import StylePreset, User
@@ -114,13 +115,16 @@ def settings_page(
     admin: User = Depends(require_admin),
 ):
     users = db.query(User).order_by(User.username).all()
-    stored_api_key = get_setting(db, "openai_api_key", "").strip()
+    legacy_openai_api_key = get_setting(db, "openai_api_key", "").strip()
+    stored_api_key = get_setting(db, "model_api_key", legacy_openai_api_key).strip()
     api_key_preview = ""
     if stored_api_key:
         if len(stored_api_key) > 11:
             api_key_preview = f"{stored_api_key[:7]}...{stored_api_key[-4:]}"
         else:
             api_key_preview = "Configured"
+    image_provider = get_setting(db, "image_provider", settings.image_provider).strip().lower() or settings.image_provider
+    image_model = get_setting(db, "image_model", settings.image_model).strip() or settings.image_model
     return templates.TemplateResponse(
         "admin_settings.html",
         {
@@ -128,6 +132,8 @@ def settings_page(
             "current_user": admin,
             "global_system_prompt": get_setting(db, "global_system_prompt"),
             "max_metaphor_length": get_setting(db, "max_metaphor_length", "80"),
+            "image_provider": image_provider,
+            "image_model": image_model,
             "has_stored_api_key": bool(stored_api_key),
             "api_key_preview": api_key_preview,
             "users": users,
@@ -139,17 +145,32 @@ def settings_page(
 def update_settings(
     global_system_prompt: str = Form(...),
     max_metaphor_length: int = Form(...),
-    openai_api_key: str = Form(""),
-    clear_openai_api_key: bool = Form(False),
+    image_provider: str = Form("openai"),
+    image_model: str = Form(""),
+    model_api_key: str = Form(""),
+    clear_model_api_key: bool = Form(False),
     db: Session = Depends(get_db),
     _: User = Depends(require_admin),
 ):
+    normalized_provider = image_provider.strip().lower()
+    if normalized_provider not in {"openai", "gemini"}:
+        normalized_provider = "openai"
+
+    normalized_model = image_model.strip()
+    if not normalized_model:
+        normalized_model = "gpt-image-1" if normalized_provider == "openai" else "gemini-3.1-flash-image-preview"
+
     set_setting(db, "global_system_prompt", global_system_prompt.strip())
     set_setting(db, "max_metaphor_length", str(max(10, min(max_metaphor_length, 300))))
-    if clear_openai_api_key:
+    set_setting(db, "image_provider", normalized_provider)
+    set_setting(db, "image_model", normalized_model)
+    if clear_model_api_key:
+        set_setting(db, "model_api_key", "")
         set_setting(db, "openai_api_key", "")
-    elif openai_api_key.strip():
-        set_setting(db, "openai_api_key", openai_api_key.strip())
+    elif model_api_key.strip():
+        set_setting(db, "model_api_key", model_api_key.strip())
+        # Keep this legacy key in sync so older deployments still work.
+        set_setting(db, "openai_api_key", model_api_key.strip())
     return RedirectResponse(url="/admin/settings", status_code=302)
 
 

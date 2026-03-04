@@ -22,6 +22,8 @@ class Settings:
     session_https_only: bool = _env_bool("SESSION_HTTPS_ONLY", False)
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///./icongen.db")
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
+    gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
+    image_provider: str = os.getenv("IMAGE_PROVIDER", "openai").strip().lower()
     image_model: str = os.getenv("IMAGE_MODEL", "gpt-image-1")
     image_size: str = os.getenv("IMAGE_SIZE", "1024x1024")
     generated_dir: str = os.getenv("GENERATED_DIR", "app/static/generated")
