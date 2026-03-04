@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+    <h1>Admin: Style Presets</h1>
+    <p class="muted">Users only see active presets in their dropdown list.</p>
+    <form method="post" action="/admin/styles" class="stack">
+        <label>Style name</label>
+        <input type="text" name="name" required />
+        <label>Prompt instructions</label>
+        <textarea name="prompt_instructions" rows="4" required></textarea>
+        <button type="submit">Add Style</button>
+    </form>
+</section>
+
+<section class="card">
+    <h2>Existing Styles</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for style in styles %}
+            <tr>
+                <td>{{ style.name }}</td>
+                <td>{{ "Active" if style.is_active else "Disabled" }}</td>
+                <td class="actions">
+                    <form method="post" action="/admin/styles/{{ style.id }}/toggle">
+                        <button type="submit">{{ "Disable" if style.is_active else "Enable" }}</button>
+                    </form>
+                    <form method="post" action="/admin/styles/{{ style.id }}/delete" onsubmit="return confirm('Delete this style?');">
+                        <button type="submit" class="danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

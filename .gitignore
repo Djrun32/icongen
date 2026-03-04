@@ -1,0 +1,7 @@
+.env
+__pycache__/
+*.pyc
+icongen.db
+app/static/generated/*.png
+data/*
+!data/.gitkeep

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+    <h1>Admin: Locked System Settings</h1>
+    <p class="muted">These values are enforced for all users during image generation.</p>
+    <form method="post" action="/admin/settings" class="stack">
+        <label>Global prompt</label>
+        <textarea name="global_system_prompt" rows="5" required>{{ global_system_prompt }}</textarea>
+        <label>Max metaphor length</label>
+        <input type="number" min="10" max="300" name="max_metaphor_length" value="{{ max_metaphor_length }}" required />
+        <button type="submit">Save Settings</button>
+    </form>
+</section>
+
+<section class="card">
+    <h2>User Management</h2>
+    <form method="post" action="/admin/users" class="grid">
+        <input type="text" name="username" placeholder="username" required />
+        <input type="password" name="password" placeholder="temporary password" required />
+        <label><input type="checkbox" name="is_admin" value="true" /> Admin</label>
+        <button type="submit">Create User</button>
+    </form>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.username }}</td>
+                <td>{{ "Admin" if user.is_admin else "User" }}</td>
+                <td>{{ "Active" if user.is_active else "Disabled" }}</td>
+                <td>
+                    <form method="post" action="/admin/users/{{ user.id }}/toggle">
+                        <button type="submit">{{ "Disable" if user.is_active else "Enable" }}</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}
