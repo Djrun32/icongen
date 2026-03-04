@@ -153,6 +153,10 @@ button.danger {
     margin-top: 2px;
 }
 
+.generate-progress.hidden {
+    display: none;
+}
+
 .progress-track {
     width: 100%;
     height: 10px;
