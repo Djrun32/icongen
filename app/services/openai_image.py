@@ -8,11 +8,12 @@ from openai import OpenAI
 from app.config import settings
 
 
-def generate_icon_with_openai(prompt: str) -> str:
-    if not settings.openai_api_key:
+def generate_icon_with_openai(prompt: str, api_key: str | None = None) -> str:
+    effective_api_key = (api_key or "").strip() or settings.openai_api_key
+    if not effective_api_key:
         raise RuntimeError("OPENAI_API_KEY is not configured.")
 
-    client = OpenAI(api_key=settings.openai_api_key)
+    client = OpenAI(api_key=effective_api_key)
     result = client.images.generate(
         model=settings.image_model,
         prompt=prompt,

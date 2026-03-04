@@ -8,6 +8,14 @@
         <textarea name="global_system_prompt" rows="5" required>{{ global_system_prompt }}</textarea>
         <label>Max metaphor length</label>
         <input type="number" min="10" max="300" name="max_metaphor_length" value="{{ max_metaphor_length }}" required />
+        <label>OpenAI API key (optional)</label>
+        <input type="password" name="openai_api_key" placeholder="sk-..." />
+        {% if has_stored_api_key %}
+        <p class="muted">Stored API key: {{ api_key_preview }}</p>
+        <label><input type="checkbox" name="clear_openai_api_key" value="true" /> Clear stored API key</label>
+        {% else %}
+        <p class="muted">No API key stored in DB. App falls back to OPENAI_API_KEY from .env.</p>
+        {% endif %}
         <button type="submit">Save Settings</button>
     </form>
 </section>
@@ -27,6 +35,7 @@
                 <th>Role</th>
                 <th>Status</th>
                 <th>Action</th>
+                <th>Reset Password</th>
             </tr>
         </thead>
         <tbody>
@@ -38,6 +47,12 @@
                 <td>
                     <form method="post" action="/admin/users/{{ user.id }}/toggle">
                         <button type="submit">{{ "Disable" if user.is_active else "Enable" }}</button>
+                    </form>
+                </td>
+                <td>
+                    <form method="post" action="/admin/users/{{ user.id }}/password" class="grid">
+                        <input type="password" name="new_password" placeholder="new password (min 8)" required />
+                        <button type="submit">Reset</button>
                     </form>
                 </td>
             </tr>

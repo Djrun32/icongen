@@ -88,6 +88,13 @@ def settings_page(
     admin: User = Depends(require_admin),
 ):
     users = db.query(User).order_by(User.username).all()
+    stored_api_key = get_setting(db, "openai_api_key", "").strip()
+    api_key_preview = ""
+    if stored_api_key:
+        if len(stored_api_key) > 11:
+            api_key_preview = f"{stored_api_key[:7]}...{stored_api_key[-4:]}"
+        else:
+            api_key_preview = "Configured"
     return templates.TemplateResponse(
         "admin_settings.html",
         {
@@ -95,6 +102,8 @@ def settings_page(
             "current_user": admin,
             "global_system_prompt": get_setting(db, "global_system_prompt"),
             "max_metaphor_length": get_setting(db, "max_metaphor_length", "80"),
+            "has_stored_api_key": bool(stored_api_key),
+            "api_key_preview": api_key_preview,
             "users": users,
         },
     )
@@ -104,11 +113,17 @@ def settings_page(
 def update_settings(
     global_system_prompt: str = Form(...),
     max_metaphor_length: int = Form(...),
+    openai_api_key: str = Form(""),
+    clear_openai_api_key: bool = Form(False),
     db: Session = Depends(get_db),
     _: User = Depends(require_admin),
 ):
     set_setting(db, "global_system_prompt", global_system_prompt.strip())
     set_setting(db, "max_metaphor_length", str(max(10, min(max_metaphor_length, 300))))
+    if clear_openai_api_key:
+        set_setting(db, "openai_api_key", "")
+    elif openai_api_key.strip():
+        set_setting(db, "openai_api_key", openai_api_key.strip())
     return RedirectResponse(url="/admin/settings", status_code=302)
 
 
@@ -143,5 +158,20 @@ def toggle_user(
     user = db.query(User).filter(User.id == user_id).first()
     if user and user.id != admin.id:
         user.is_active = not user.is_active
+        db.commit()
+    return RedirectResponse(url="/admin/settings", status_code=302)
+
+
+@router.post("/users/{user_id}/password")
+def reset_user_password(
+    user_id: int,
+    new_password: str = Form(...),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    password = new_password.strip()
+    if user and len(password) >= 8:
+        user.password_hash = hash_password(password)
         db.commit()
     return RedirectResponse(url="/admin/settings", status_code=302)

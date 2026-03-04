@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db import get_db
 from app.deps import get_current_user
 from app.models import GeneratedIcon, StylePreset, User
@@ -93,9 +94,11 @@ def generate_icon(
 
     system_prompt = get_setting(db, "global_system_prompt")
     prompt = _build_prompt(system_prompt, style.prompt_instructions, metaphor)
+    admin_api_key = get_setting(db, "openai_api_key", "").strip()
+    effective_api_key = admin_api_key or settings.openai_api_key
 
     try:
-        relative_path = generate_icon_with_openai(prompt)
+        relative_path = generate_icon_with_openai(prompt, api_key=effective_api_key)
     except Exception as exc:
         return templates.TemplateResponse(
             "generate.html",

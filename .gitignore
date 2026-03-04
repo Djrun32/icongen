@@ -1,4 +1,6 @@
 .env
+.venv/
+app/.venv/
 __pycache__/
 *.pyc
 icongen.db

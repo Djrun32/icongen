@@ -17,7 +17,7 @@ Internal web app for generating presentation icons with OpenAI GPT Image models.
 
 ## Quick start (Ubuntu VM)
 
-1. Install Python 3.11+ and `pip`.
+1. Install Python 3.10+ and `pip`.
 2. Create virtual environment and install dependencies:
    ```bash
    python3 -m venv .venv
@@ -28,12 +28,16 @@ Internal web app for generating presentation icons with OpenAI GPT Image models.
    - `SECRET_KEY` to a long random value.
    - `OPENAI_API_KEY` to your API key.
    - `INITIAL_ADMIN_PASSWORD` to a secure password.
-4. Run the app:
+4. Run the app (`.env` is auto-loaded):
    ```bash
    uvicorn app.main:app --host 0.0.0.0 --port 8000
    ```
 5. Open `http://<vm-ip>:8000`.
 6. Sign in with `INITIAL_ADMIN_USERNAME` and `INITIAL_ADMIN_PASSWORD`.
+7. In `/admin/settings`, you can:
+   - update locked generation prompt/limits,
+   - set or clear a DB-stored OpenAI API key,
+   - reset any user password.
 
 ## Docker option
 
