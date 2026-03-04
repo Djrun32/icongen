@@ -194,6 +194,15 @@ button.danger {
     background: #fff;
 }
 
+.history-thumb {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+}
+
 .auth-bg {
     min-height: 100vh;
     display: grid;

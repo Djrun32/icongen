@@ -8,12 +8,18 @@
     {% endif %}
     <form method="post" action="/generate" class="stack" id="generate-form">
         <label>Icon metaphor</label>
-        <input type="text" name="metaphor" placeholder="e.g. growth, teamwork, risk shield" required />
+        <input
+            type="text"
+            name="metaphor"
+            value="{{ metaphor }}"
+            placeholder="e.g. growth, teamwork, risk shield"
+            required
+        />
 
         <label>Style preset</label>
         <select name="style_id" required>
             {% for style in styles %}
-            <option value="{{ style.id }}">{{ style.name }}</option>
+            <option value="{{ style.id }}" {% if style.id == selected_style_id %}selected{% endif %}>{{ style.name }}</option>
             {% endfor %}
         </select>
         <button type="submit" id="generate-submit">Generate Icon</button>
@@ -33,6 +39,36 @@
         <img src="{{ result_path }}" alt="Generated icon" />
     </div>
     <p><a href="{{ result_path }}" download>Download PNG</a></p>
+</section>
+{% endif %}
+
+{% if history %}
+<section class="card">
+    <h2>Recent Generations (Last 10)</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Preview</th>
+                <th>Metaphor</th>
+                <th>Style</th>
+                <th>Created</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in history %}
+            <tr>
+                <td>
+                    <img src="{{ item.result_path }}" alt="Generated icon preview" class="history-thumb" />
+                </td>
+                <td>{{ item.metaphor }}</td>
+                <td>{{ item.style_name }}</td>
+                <td>{{ item.created_at }}</td>
+                <td><a href="{{ item.result_path }}" download>Download PNG</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </section>
 {% endif %}
 <script>

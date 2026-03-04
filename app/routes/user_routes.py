@@ -23,6 +23,55 @@ def _build_prompt(system_prompt: str, style_instructions: str, metaphor: str) ->
     )
 
 
+def _get_recent_history(db: Session, user_id: int, limit: int = 10):
+    history_rows = (
+        db.query(GeneratedIcon, StylePreset.name)
+        .join(StylePreset, GeneratedIcon.style_id == StylePreset.id, isouter=True)
+        .filter(GeneratedIcon.user_id == user_id)
+        .order_by(GeneratedIcon.created_at.desc(), GeneratedIcon.id.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "metaphor": icon.metaphor,
+            "style_name": style_name or "Unknown style",
+            "created_at": icon.created_at,
+            "result_path": f"/static/{icon.file_path}",
+        }
+        for icon, style_name in history_rows
+    ]
+
+
+def _render_generate_page(
+    request: Request,
+    current_user: User,
+    styles: list[StylePreset],
+    history: list[dict],
+    result_path: str | None = None,
+    error: str | None = None,
+    metaphor: str = "",
+    selected_style_id: int | None = None,
+    status_code: int = 200,
+):
+    if selected_style_id is None and styles:
+        selected_style_id = styles[0].id
+    return templates.TemplateResponse(
+        "generate.html",
+        {
+            "request": request,
+            "current_user": current_user,
+            "styles": styles,
+            "history": history,
+            "result_path": result_path,
+            "error": error,
+            "metaphor": metaphor,
+            "selected_style_id": selected_style_id,
+        },
+        status_code=status_code,
+    )
+
+
 @router.get("/generate")
 def generate_page(
     request: Request,
@@ -30,15 +79,12 @@ def generate_page(
     current_user: User = Depends(get_current_user),
 ):
     styles = db.query(StylePreset).filter(StylePreset.is_active == True).order_by(StylePreset.name).all()  # noqa: E712
-    return templates.TemplateResponse(
-        "generate.html",
-        {
-            "request": request,
-            "current_user": current_user,
-            "styles": styles,
-            "result_path": None,
-            "error": None,
-        },
+    history = _get_recent_history(db, current_user.id, limit=10)
+    return _render_generate_page(
+        request=request,
+        current_user=current_user,
+        styles=styles,
+        history=history,
     )
 
 
@@ -51,64 +97,61 @@ def generate_icon(
     current_user: User = Depends(get_current_user),
 ):
     styles = db.query(StylePreset).filter(StylePreset.is_active == True).order_by(StylePreset.name).all()  # noqa: E712
+    history = _get_recent_history(db, current_user.id, limit=10)
     style = db.query(StylePreset).filter(StylePreset.id == style_id, StylePreset.is_active == True).first()  # noqa: E712
+    raw_metaphor = metaphor.strip()
+
     if not style:
-        return templates.TemplateResponse(
-            "generate.html",
-            {
-                "request": request,
-                "current_user": current_user,
-                "styles": styles,
-                "result_path": None,
-                "error": "Selected style is not available.",
-            },
+        return _render_generate_page(
+            request=request,
+            current_user=current_user,
+            styles=styles,
+            history=history,
+            error="Selected style is not available.",
+            metaphor=raw_metaphor,
+            selected_style_id=style_id,
             status_code=400,
         )
 
     max_length = int(get_setting(db, "max_metaphor_length", "80"))
-    metaphor = metaphor.strip()
-    if not metaphor:
-        return templates.TemplateResponse(
-            "generate.html",
-            {
-                "request": request,
-                "current_user": current_user,
-                "styles": styles,
-                "result_path": None,
-                "error": "Metaphor is required.",
-            },
+    if not raw_metaphor:
+        return _render_generate_page(
+            request=request,
+            current_user=current_user,
+            styles=styles,
+            history=history,
+            error="Metaphor is required.",
+            selected_style_id=style_id,
             status_code=400,
         )
-    if len(metaphor) > max_length:
-        return templates.TemplateResponse(
-            "generate.html",
-            {
-                "request": request,
-                "current_user": current_user,
-                "styles": styles,
-                "result_path": None,
-                "error": f"Metaphor is too long. Maximum length is {max_length}.",
-            },
+    if len(raw_metaphor) > max_length:
+        return _render_generate_page(
+            request=request,
+            current_user=current_user,
+            styles=styles,
+            history=history,
+            error=f"Metaphor is too long. Maximum length is {max_length}.",
+            metaphor=raw_metaphor,
+            selected_style_id=style_id,
             status_code=400,
         )
 
     system_prompt = get_setting(db, "global_system_prompt")
-    prompt = _build_prompt(system_prompt, style.prompt_instructions, metaphor)
+    prompt = _build_prompt(system_prompt, style.prompt_instructions, raw_metaphor)
     admin_api_key = get_setting(db, "openai_api_key", "").strip()
     effective_api_key = admin_api_key or settings.openai_api_key
 
     try:
         relative_path = generate_icon_with_openai(prompt, api_key=effective_api_key)
     except Exception as exc:
-        return templates.TemplateResponse(
-            "generate.html",
-            {
-                "request": request,
-                "current_user": current_user,
-                "styles": styles,
-                "result_path": None,
-                "error": f"Image generation failed: {exc}",
-            },
+        return _render_generate_page(
+            request=request,
+            current_user=current_user,
+            styles=styles,
+            history=history,
+            error=f"Image generation failed: {exc}",
+            metaphor=raw_metaphor,
+            selected_style_id=style_id,
             status_code=500,
         )
 
@@ -116,20 +159,20 @@ def generate_icon(
         GeneratedIcon(
             user_id=current_user.id,
             style_id=style.id,
-            metaphor=metaphor,
+            metaphor=raw_metaphor,
             prompt_used=prompt,
             file_path=relative_path,
         )
     )
     db.commit()
+    updated_history = _get_recent_history(db, current_user.id, limit=10)
 
-    return templates.TemplateResponse(
-        "generate.html",
-        {
-            "request": request,
-            "current_user": current_user,
-            "styles": styles,
-            "result_path": f"/static/{relative_path}",
-            "error": None,
-        },
+    return _render_generate_page(
+        request=request,
+        current_user=current_user,
+        styles=styles,
+        history=updated_history,
+        result_path=f"/static/{relative_path}",
+        metaphor=raw_metaphor,
+        selected_style_id=style_id,
     )
