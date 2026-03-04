@@ -14,12 +14,10 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
 
-def _build_prompt(system_prompt: str, style_instructions: str, metaphor: str) -> str:
+def _build_prompt(style_instructions: str, metaphor: str) -> str:
     return (
-        f"{system_prompt}\n"
-        f"Style constraints: {style_instructions}\n"
-        f"Metaphor to represent: {metaphor}\n"
-        "Output one icon only. Clean edges, no text, no logo, no watermark."
+        f"Style instructions: {style_instructions}\n"
+        f"Metaphor to represent: {metaphor}"
     )
 
 
@@ -136,8 +134,7 @@ def generate_icon(
             status_code=400,
         )
 
-    system_prompt = get_setting(db, "global_system_prompt")
-    prompt = _build_prompt(system_prompt, style.prompt_instructions, raw_metaphor)
+    prompt = _build_prompt(style.prompt_instructions, raw_metaphor)
     admin_api_key = get_setting(db, "openai_api_key", "").strip()
     effective_api_key = admin_api_key or settings.openai_api_key
 
